@@ -105,6 +105,8 @@ bot.on('callback_query', (query) => {
             bot.answerCallbackQuery(query.id).catch((err) => {
                 // nothing
             });
+            done("no error", "ok");
+
             return
         }
 
