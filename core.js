@@ -291,7 +291,10 @@ module.exports=class LogicGrid {
     }
 
     checkAllOpen(){
-        return this.allCells().length === this.mineCount;
+        let restNum = 0
+        for (const cell of this.allCells())
+            if (!cell.revealed) ++restNum;
+        return restNum === this.mineCount;
     }
 
     guessMine() {
