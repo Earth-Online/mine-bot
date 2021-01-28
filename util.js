@@ -14,11 +14,11 @@ module.exports = {
     coreToKeyboard: function (core,boom) {
         const matrix = [];
 
-        for (let i = 0; i < core.width; i += 1) {
+        for (let i = 0; i < core.height; i += 1) {
             matrix.push([]);
 
-            for (let j = 0; j < core.height; j += 1) {
-                let cell = core.cells[i][j]
+            for (let j = 0; j < core.width; j += 1) {
+                let cell = core.cells[j][i]
                 let text = '\u2588'
 
                 if (cell.revealed && !cell.knownMine) {
