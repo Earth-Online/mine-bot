@@ -1,9 +1,12 @@
 module.exports = {
     validate: function(width, height, count) {
-        if (width > 10 || height > 10) {
-            return "行数和列数最大10"
+        if (row > 12){
+            return "行数最大12"
         }
-        if (count <= 0 || count >= width * height) {
+        if (col > 8) {
+            return "列数最大8"
+        }
+        if (count <= 0 || count >= row * col) {
             return "地雷数必须大于0和小于格子数量"
         }
         return null;
