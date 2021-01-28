@@ -15,7 +15,7 @@ module.exports = {
             count: count,
             map: null,
         };
-        c = new core(row, col, count)
+        c = new core(col,row,count)
         games[id].map = c
         return games[id].map
     },
