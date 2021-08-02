@@ -14,6 +14,7 @@ module.exports = {
             col: col,
             count: count,
             map: null,
+            flagnum:0
         };
         c = new core(col,row,count)
         games[id].map = c
@@ -51,16 +52,19 @@ module.exports = {
             }
             if(n === cell.number){
                 for (const neighbour of mineCore.neighbourCells(cell)) {
-                    if (!neighbour.revealed)
+                    if (!neighbour.revealed){
                         neighbour.flagged = true
-                    eval = true
+                        mineCore.flagnum++
+                        eval = true
+                    }
                 }
 
             }else if(f === cell.number){
                 for (const neighbour of mineCore.neighbourCells(cell)) {
-                    if (!neighbour.flagged)
+                    if (!neighbour.flagged){
                         mineCore.reveal(neighbour);
-                    eval = true
+                        eval = true
+                    }
                 }
             }
             if(!eval){
@@ -80,6 +84,13 @@ module.exports = {
             delete games[id]
             return -1
         }
+
+        let flagnum = games[id].map.flagnum
+        if(flagnum === games[id].count){
+            delete games[id]
+            return 2
+        }
+
         let win = games[id].map.checkAllOpen()
         if (win) {
             delete games[id]
