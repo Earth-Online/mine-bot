@@ -1,8 +1,8 @@
 module.exports=class LogicGrid {
 
-    constructor(width, height, mineCount) {
-        if (!height) {
-            this.parent = width;
+    constructor(col, row, mineCount) {
+        if (!row) {
+            this.parent = col;
             this.width = this.parent.width;
             this.height = this.parent.height;
             this.mineCount = this.parent.mineCount;
@@ -14,11 +14,11 @@ module.exports=class LogicGrid {
             // TODO: better deep clone:
             this.cells = JSON.parse(JSON.stringify(this.parent.cells));
         } else {
-            this.width = width;
-            this.height = height;
+            this.width = col;
+            this.height = row;
             this.mineCount = mineCount;
             this.missingMines = mineCount;
-            this.missingSafes = width * height - mineCount;
+            this.missingSafes = col * row - mineCount;
             this.cells = [];
             for (let y = 0; y < this.height; ++y) {
                 const row = this.cells[y] = [];
@@ -97,6 +97,7 @@ module.exports=class LogicGrid {
             // console.log('resolvomaton', cell);
         }
 
+
         if (cell.knownMine) {
             cell.revealed = true;
             this.updateKnowledge({ runHypotheticals: true });
@@ -166,6 +167,7 @@ module.exports=class LogicGrid {
             return;
         }
 
+
         // console.log('Cells in play', this.toString(), cellsInPlay.length);
         for (const betterCell of cellsInPlay) {
             if (cell == betterCell) continue;
@@ -192,6 +194,7 @@ module.exports=class LogicGrid {
                 this.makeSafe(cell, `Made safe because the not-in-play cells must be safe`);
             return;
         }
+
 
         const ifMine = this.clone(),
             ifSafe = this.clone();
@@ -244,12 +247,7 @@ module.exports=class LogicGrid {
                     throw new Error('Infinite loop suspected while looping guesses');
                 }
                 const grid = this.clone();
-                let subIters = 400;
                 while (!grid.done) {
-                    if (!--subIters) {
-                        // console.error('Infinite loop suspected. Input:', beforeLoop, 'current:', grid.toString());
-                        throw new Error('Infinite loop suspected when guessing');
-                    }
                     grid.guessMine();
                     if (grid.invalid){
                         // console.log('Looping because invalid')
@@ -298,10 +296,12 @@ module.exports=class LogicGrid {
     }
 
     guessMine() {
-        let places = [ ...this.cellsInPlay() ];
-        if (places.length == 0)
-            places = [ ...this.allCells() ]
-                .filter(c => !c.knownMine && !c.knownSafe);
+        // 这样雷总是先从附近开始生成
+        //let places = [ ...this.cellsInPlay() ]
+        //if (places.length === 0){
+        //    places = [ ...this.allCells() ].filter(c => !c.knownMine && !c.knownSafe);
+        //}
+        let places = [...this.allCells()].filter(c => !c.knownMine && !c.knownSafe && !c.revealed);
         if (places.length) {
             const place = places[~~(Math.random() * places.length)];
             if (Math.random() < 0.5)
@@ -310,8 +310,8 @@ module.exports=class LogicGrid {
                 this.makeSafe(place, 'Guessed safe');
         } // else console.log('Guessing but there’s nowhere to go');
         else throw new Error('Guessing but there’s nothing to go');
-        this.updateKnowledge({ runHypotheticals: false });
-        // console.log('done a guess', this.toString());
+
+        this.updateKnowledge({runHypotheticals: false});
     }
 
     makeMine(cell, reason) {
@@ -436,6 +436,7 @@ module.exports=class LogicGrid {
                         else if (missingSafes == 0) {
                             for (const n of unknowns) {
                                 if (n.knownMine || n.knownSafe) throw new Error('what');
+
                                 this.makeMine(n, `Marked a mine because the ${cell.number} at ${cell.x}, ${cell.y} is full`);
                                 known.push(n);
                             }
