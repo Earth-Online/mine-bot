@@ -147,6 +147,7 @@ module.exports=class LogicGrid {
             return;
         }
 
+
         // was there a safe space you could have clicked?
         for (const betterCell of this.allCells())
             if (betterCell != cell && betterCell.knownSafe && !betterCell.revealed) {
@@ -211,23 +212,6 @@ module.exports=class LogicGrid {
         if (!ifMine.invalid && ifSafe.invalid) {
             this.makeMine(cell, `Resolved to a mine after an exhaustive search`);
             return;
-        }
-
-        // this means it legit could be either.
-        // it should be a mine IF we can find another space that's provably safe
-        // and safe if we can't.
-        for (const alternative in this.cellsInPlay()) {
-            if (cell == alternative) continue;
-            const ifMine = this.clone();
-            ifMine.makeMine(ifMine.cell(alternative.x, alternative.y));
-            ifMine.updateKnowledge({
-                runHypotheticals: true,
-                exhaustive: true
-            });
-            if (ifMine.invalid) {
-                this.makeMine(cell, `Marked a mine because an exhaustive search found a safe space at ${alternative.x}, ${alternative.y}`);
-                return;
-            }
         }
 
         // welp, we can't think of an excuse to kill the player
@@ -302,12 +286,11 @@ module.exports=class LogicGrid {
         //    places = [ ...this.allCells() ].filter(c => !c.knownMine && !c.knownSafe);
         //}
         let places = [...this.allCells()].filter(c => !c.knownMine && !c.knownSafe && !c.revealed);
-        if (places.length) {
-            const place = places[~~(Math.random() * places.length)];
-            if (Math.random() < 0.5)
-                this.makeMine(place, 'Guessed a mine');
-            else
-                this.makeSafe(place, 'Guessed safe');
+        if (places.length >= 0) {
+            for (let i = 0; i < this.missingMines; i++) {
+                const place = places[~~(Math.random() * places.length)];
+                this.makeMine(place, 'Guessed a mine')
+            }
         } // else console.log('Guessing but there’s nowhere to go');
         else throw new Error('Guessing but there’s nothing to go');
 
@@ -425,17 +408,24 @@ module.exports=class LogicGrid {
                     //     knownMines: knownMines.length
                     // })
                     if (unknowns.length > 0) {
-                        if (missingMines == 0) {
+                        if (missingMines === 0) {
                             for (const n of unknowns) {
-                                if (n.knownMine || n.knownSafe) throw new Error('what');
+                                if (n.knownMine) {
+                                    this.invalid = `what`;
+                                    return
+                                }
+                                ;
                                 this.makeSafe(n, `Marked safe because the ${cell.number} at ${cell.x}, ${cell.y} is done`);
                                 known.push(n);
                             }
                             learnedAnything = true;
-                        }
-                        else if (missingSafes == 0) {
+                        } else if (missingSafes === 0) {
                             for (const n of unknowns) {
-                                if (n.knownMine || n.knownSafe) throw new Error('what');
+                                if (n.knownMine || n.knownSafe) {
+                                    this.invalid = `what`;
+                                    return
+                                }
+                                ;
 
                                 this.makeMine(n, `Marked a mine because the ${cell.number} at ${cell.x}, ${cell.y} is full`);
                                 known.push(n);
