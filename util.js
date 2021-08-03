@@ -18,7 +18,7 @@ module.exports = {
             matrix.push([]);
 
             for (let j = 0; j < core.width; j += 1) {
-                let cell = core.cells[j][i]
+                let cell = core.cell(j, i)
                 let text = '\u2588'
 
                 if (cell.revealed && !cell.knownMine) {
