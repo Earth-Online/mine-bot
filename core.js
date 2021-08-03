@@ -63,12 +63,24 @@ module.exports=class LogicGrid {
                 yield cell;
     }
 
-    *cellsInPlay() {
+    * cellsInPlay() {
         for (const cell of this.allCells()) {
             if (cell.revealed || cell.knownMine || cell.knownSafe)
                 continue;
             for (const n of this.neighbourCells(cell))
                 if (n.revealed && !n.knownMine) {
+                    yield cell;
+                    break;
+                }
+        }
+    }
+
+    * cellsRevealed() {
+        for (const cell of this.allCells()) {
+            if (cell.revealed || cell.knownMine || cell.knownSafe)
+                continue;
+            for (const n of this.neighbourCells(cell))
+                if (!n.revealed && !n.knownMine) {
                     yield cell;
                     break;
                 }
@@ -259,12 +271,12 @@ module.exports=class LogicGrid {
                 let n = 0;
                 for (const nc of this.neighbourCells(cell))
                     if (nc.knownMine) ++n;
-                if (n != cell.number) {
+                if (n !== cell.number) {
                     // console.log(`Invalid — expected ${cell.number} mines but found ${n}`, cell);
                     return false;
                 }
             }
-        if (mines != this.mineCount) {
+        if (mines !== this.mineCount) {
             // console.log(`Invalid — expected ${this.mineCount} mines but found ${mines}`);
             return false;
         }
@@ -285,6 +297,31 @@ module.exports=class LogicGrid {
         //if (places.length === 0){
         //    places = [ ...this.allCells() ].filter(c => !c.knownMine && !c.knownSafe);
         //}
+
+        let playPlaces = [...this.cellsRevealed()]
+        if (playPlaces.length >= 0) {
+            for (const cell of playPlaces) {
+                if (cell.number === 0) {
+                    continue;
+                }
+                const knownMines = [], knownSafes = [], unknowns = [],
+                    neighbours = [...this.neighbourCells(cell)];
+                if (cell.number === null) throw new Error('Revealed cell has no number');
+                for (const n of neighbours) {
+                    if (n.knownMine) knownMines.push(n);
+                    else if (n.knownSafe) knownSafes.push(n);
+                    else unknowns.push(n);
+                }
+                const missingMines = cell.number - knownMines.length
+                if (missingMines > 0) {
+                    for (let i = 0; i < missingMines; i++) {
+                        const place = unknowns[~~(Math.random() * unknowns.length)];
+                        this.makeMine(place, 'Guessed a mine')
+                    }
+                }
+            }
+
+        } // else console.log('Guessing but there’s nowhere to go');
         let places = [...this.allCells()].filter(c => !c.knownMine && !c.knownSafe && !c.revealed);
         if (places.length >= 0) {
             for (let i = 0; i < this.missingMines; i++) {
@@ -306,7 +343,7 @@ module.exports=class LogicGrid {
             cell.reason = reason;
             // console.log(cell.x, cell.y, reason);
         }
-        if (--this.missingMines == 0) {
+        if (--this.missingMines === 0) {
             for (const cell of this.allCells())
                 if (!cell.knownMine && !cell.knownSafe)
                     this.makeSafe(cell);
@@ -414,7 +451,6 @@ module.exports=class LogicGrid {
                                     this.invalid = `what`;
                                     return
                                 }
-                                ;
                                 this.makeSafe(n, `Marked safe because the ${cell.number} at ${cell.x}, ${cell.y} is done`);
                                 known.push(n);
                             }
@@ -425,7 +461,6 @@ module.exports=class LogicGrid {
                                     this.invalid = `what`;
                                     return
                                 }
-                                ;
 
                                 this.makeMine(n, `Marked a mine because the ${cell.number} at ${cell.x}, ${cell.y} is full`);
                                 known.push(n);
