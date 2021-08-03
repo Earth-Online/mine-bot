@@ -64,6 +64,7 @@ bot.onText(/^\/mine(@\w+)?(?: (\d+) (\d+) (\d+))?$/, (msg, match) => {
                     reply_to_message_id: msg.message_id,
                 }
             );
+            return
         }
 
         mineCore = game.gameInit(sentmsg.chat.id + '_' + sentmsg.message_id,row,col,count)
@@ -91,6 +92,7 @@ bot.on('callback_query', (query) => {
     const info = JSON.parse(query.data);
 
     if (typeof info[0] !== 'number' || typeof info[1] !== 'number') {
+
         throw Error(JSON.stringify(query));
     }
     lock.acquire(gameId, function(done) {
@@ -98,7 +100,6 @@ bot.on('callback_query', (query) => {
             done("no error", "ok");
             return
         }
-        let result = game.gameClick(msg.chat.id + '_' + msg.message_id,info[0],info[1])
 
         // 游戏已经结束或者点击已经打开/标记的格子
         if(result === null){
@@ -106,16 +107,24 @@ bot.on('callback_query', (query) => {
                 // nothing
             });
             done("no error", "ok");
-
             return
         }
 
         let win = game.isGameWin(msg.chat.id + '_' + msg.message_id)
-        if(win === 1){
-            username =  query.from.username || query.from.first_name;
+        if (win === 1) {
+            username = query.from.username || query.from.first_name;
+            bot.editMessageReplyMarkup(
+                {
+                    inline_keyboard: util.coreToKeyboard(result, true),
+                },
+                {
+                    chat_id: msg.chat.id,
+                    message_id: msg.message_id,
+                }
+            )
             bot.sendMessage(
                 msg.chat.id,
-                "@"+ username+" 你已经打开了所有地雷",
+                "@" + username + " 你已经打开了所有地雷",
                 {
                     reply_to_message_id: msg.message_id,
                 }
@@ -133,15 +142,33 @@ bot.on('callback_query', (query) => {
             )
             bot.sendMessage(
                 msg.chat.id,
-                "@"+ username+" 你炸了",
+                "@" + username + " 你炸了",
                 {
                     reply_to_message_id: msg.message_id,
                 }
             );
-        }else {
+        } else if (win === 2) {
+            username = query.from.username || query.from.first_name;
             bot.editMessageReplyMarkup(
                 {
-                    inline_keyboard: util.coreToKeyboard(result,null),
+                    inline_keyboard: util.coreToKeyboard(result, true),
+                },
+                {
+                    chat_id: msg.chat.id,
+                    message_id: msg.message_id,
+                }
+            )
+            bot.sendMessage(
+                msg.chat.id,
+                "@" + username + " 你已经找到了所有地雷",
+                {
+                    reply_to_message_id: msg.message_id,
+                }
+            );
+        } else {
+            bot.editMessageReplyMarkup(
+                {
+                    inline_keyboard: util.coreToKeyboard(result, null),
                 },
                 {
                     chat_id: msg.chat.id,
@@ -149,15 +176,15 @@ bot.on('callback_query', (query) => {
                 }
             )
         }
-        bot.answerCallbackQuery(query.id).catch((err) => {
-            // nothing
-        });
         done("no error", "ok");
-    }, function(err, ret) {
-        console.log(err)
 
+    }, function (err, ret) {
+        //console.log("error")
+        console.log(err)
         // lock released
     }, null);
 
 })
+
+bot.on("polling_error", console.log);
 
