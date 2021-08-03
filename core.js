@@ -301,12 +301,11 @@ module.exports=class LogicGrid {
         let playPlaces = [...this.cellsRevealed()]
         if (playPlaces.length >= 0) {
             for (const cell of playPlaces) {
-                if (cell.number === 0) {
+                if (cell.number === null) {
                     continue;
                 }
                 const knownMines = [], knownSafes = [], unknowns = [],
                     neighbours = [...this.neighbourCells(cell)];
-                if (cell.number === null) throw new Error('Revealed cell has no number');
                 for (const n of neighbours) {
                     if (n.knownMine) knownMines.push(n);
                     else if (n.knownSafe) knownSafes.push(n);
