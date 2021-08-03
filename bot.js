@@ -89,23 +89,47 @@ bot.on('callback_query', (query) => {
 
     gameId = msg.chat.id + '_' + msg.message_id
 
+    try {
+        const info = JSON.parse(query.data);
+    } catch (e) {
+        throw Error("json error");
+    }
+
     const info = JSON.parse(query.data);
 
     if (typeof info[0] !== 'number' || typeof info[1] !== 'number') {
 
         throw Error(JSON.stringify(query));
     }
-    lock.acquire(gameId, function(done) {
-        if(!game.getGame(gameId)){
-            done("no error", "ok");
+    lock.acquire(gameId, function (done) {
+        bot.answerCallbackQuery(query.id).catch((err) => {
+            // nothing
+        });
+
+        if (!game.getGame(gameId)) {
+            done(new Error("not can found game"));
+            return
+        }
+        try {
+            var result = game.gameClick(msg.chat.id + '_' + msg.message_id, info[0], info[1])
+        } catch (err) {
+            bot.sendMessage(
+                msg.chat.id,
+                err.msg,
+                {
+                    reply_to_message_id: msg.message_id,
+                }
+            );
+            done(err);
             return
         }
 
         // 游戏已经结束或者点击已经打开/标记的格子
-        if(result === null){
+        if (result === null) {
+            /*
             bot.answerCallbackQuery(query.id).catch((err) => {
                 // nothing
-            });
+            });*/
             done("no error", "ok");
             return
         }
@@ -129,8 +153,8 @@ bot.on('callback_query', (query) => {
                     reply_to_message_id: msg.message_id,
                 }
             );
-        }else  if(win  === -1){
-            username =  query.from.username || query.from.first_name;
+        } else if (win === -1) {
+            username = query.from.username || query.from.first_name;
             bot.editMessageReplyMarkup(
                 {
                     inline_keyboard: util.coreToKeyboard(result,true),
